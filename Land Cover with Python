@@ -1,0 +1,60 @@
+import rasterio
+from rasterio import features
+import geopandas as gdp
+import matplotlib.pyplot as plt
+import numpy as np
+from shapely.geometry import shape
+
+# path ke file citra sentinel-2
+file_path = ‘/content/drive/MyDrive/Google earth engine/Sentinel2_KotaPadang_2024’
+
+# Buka file citra
+with rasterio.open(file_path) as src:
+	# Baca band Red (band 4) dan NIR (Band 8)
+	Red = src.read(3).astype(‘float32’)
+	Nir = src.read(4).astype(‘floa32’)
+
+	# Hitung NDVI
+	ndvi = (nir – red) / (nir + red)
+	
+	# Klasifikasi NDVI
+	ndvi_classified = np.zeros_like(ndvi, dtype=’uint8’)
+	ndvi_classified[ndvi < 0] = 1 # Badan Air
+	ndvi_classified[(ndvi >= 0) & (ndvi < 0.2)] = 2 # Lahan Terbangun
+	ndvi_classified[ndvi > 0.2] = 3 # vegetasi
+
+	#konversi mask ke polygon
+	Shapes = features.shapes(ndvi_classified, transform =src.transform)
+
+	# Buat Geodataframe dari polygon
+Polygon = []
+Classes = []
+For geom, value in shapes:
+	Polygons.append(shape(geom))
+	Classes.append(value)
+
+# buat geodataframe
+gdf = gdp.GeoDataFrame({‘class’ : classes,’geometry’ : polygons})
+gdf.crs = src.crs # Set CRS dari Citra
+
+# Simpan sebagai file shapefile (opsional)
+Output_shapefile = ‘/content/drive/MyDrive/Google earth engine/NDVI_polygon’
+Gdf.to_file(output_shapefile)
+
+# simbolisasi
+Class_mapping = {
+	1 : ‘Badan Air’
+	2: ‘Lahan Terbangun’
+	3 : ‘Vegetasi’
+}
+gdf[‘class_name’] = gdf[‘class’].map(class_mapping)
+
+# plot hasil
+fig, ax = plt.subplots(figsize=(10,10))
+gdf.plot(column=’class_name’, legend=true, ax=ax,
+	legend_kwds=={‘loc’: ‘upper left’},
+	cmap= ‘viridis’, # warna yang sesuaia
+	categorical = true)
+plt.title (‘Klasifikasi Tutupan Lahan Berdasarkan NDVI’)
+plt.axis(‘off’)
+plt.show()
